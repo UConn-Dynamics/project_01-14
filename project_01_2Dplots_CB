@@ -41,13 +41,19 @@ begin
     sol_fast = solve(prob_fast)
 
     # Two separate plots in one output
-    p1 = plot(sol_slow, xlabel="Time (s)", ylabel="θ (rad)",
-              title="Slow Rotation (Ω = 1 rad/s)", legend=false)
+    p1 = plot(sol_slow,
+          xlabel="Time (s)",
+          ylabel="θ(t)",
+          title="Slow Rotation (Ω = 1 rad/s)",
+          label=["θ (rad)" "ω (rad/s)"])
 
-    p2 = plot(sol_fast, xlabel="Time (s)", ylabel="θ (rad)",
-              title="Fast Rotation (Ω = 10 rad/s)", legend=false)
+p2 = plot(sol_fast,
+          xlabel="Time (s)",
+          ylabel="θ(t)",
+          title="Fast Rotation (Ω = 10 rad/s)",
+          label=["θ (rad)" "ω (rad/s)"])
 
-    plot(p1, p2, layout=(2,1), size=(700,600))
+plot(p1, p2, layout=(2,1), size=(700,600))
 end
 
 # ╔═╡ f17103ea-06bf-11f1-a2b0-79e68ed152eb
