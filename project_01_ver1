@@ -6,77 +6,96 @@ using InteractiveUtils
 
 # ╔═╡ 0d9be664-d7c5-4084-add2-25e5418742d6
 begin
-	using DifferentialEquations
-	using Plots
-	const g  = 9.81
-	const L  = 0.15
-	const m  = 0.1
-	const h1 = 0.2
-	const w1 = 0.1
-	Ω = 20
-	θ0    = 20 * (pi/180)
-	θdot0 = 0.0
-	tspan = (0.0, 10.0)
-	function spinning_pendulum!(du, u, p, t)
-	    θ, θdot = u
-	    g, L, Ω = p
-	    du[1] = θdot
-	    du[2] = -(g/L)*sin(θ) + Ω^2*sin(θ)*cos(θ)
-	end
-	u0   = [θ0, θdot0]
-	pars = (g, L, Ω)
-	prob = ODEProblem(spinning_pendulum!, u0, tspan, pars)
-	sol  = solve(prob, Tsit5(); reltol=1e-9, abstol=1e-9)
-	Rz(φ) = begin
-	    c = cos(φ); s = sin(φ)
-	    [c -s 0.0;
-	     s  c 0.0;
-	     0.0 0.0 1.0]
-	end
-	pivot_inertial(t; Ω=Ω, w1=w1, h1=h1) = Rz(Ω*t) * [0.0, w1, h1]
-	bob_inertial(θ, t; Ω=Ω, L=L, w1=w1, h1=h1) = begin
-	    φ = Ω*t
-	    q = [L*sin(θ), w1, h1 - L*cos(θ)]
-	    Rz(φ) * q
-	end
-	fps = 60
-	ts  = range(tspan[1], tspan[2], length=Int(round((tspan[2]-tspan[1])*fps))+1)
-	θs = [sol(ti)[1] for ti in ts]
-	xs = Float64[]; ys = Float64[]; zs = Float64[]
-	px = Float64[]; py = Float64[]; pz = Float64[]
-	for (ti, θi) in zip(ts, θs)
-	    r  = bob_inertial(θi, ti)
-	    rp = pivot_inertial(ti)
-	    push!(xs, r[1]);  push!(ys, r[2]);  push!(zs, r[3])
-	    push!(px, rp[1]); push!(py, rp[2]); push!(pz, rp[3])
-	end
-	origin = [0.0, 0.0, 0.0]
-	top    = [0.0, 0.0, h1]  
-	pad = 0.05
-	xmin, xmax = minimum([xs; px; 0.0]) - pad, maximum([xs; px; 0.0]) + pad
-	ymin, ymax = minimum([ys; py; 0.0]) - pad, maximum([ys; py; 0.0]) + pad
-	zmin, zmax = minimum([zs; pz; 0.0]) - pad, maximum([zs; pz; 0.0]) + pad
-	trail_len = Int(round(1.0*fps))  
-	anim = @animate for k in eachindex(ts)
-	    ti = ts[k]
-	    p = [px[k], py[k], pz[k]]
-	    b = [xs[k], ys[k], zs[k]]
-	    k0 = max(1, k - trail_len)
-	    xt = xs[k0:k]; yt = ys[k0:k]; zt = zs[k0:k]
-	    plt = plot(
-	        xlim=(xmin, xmax), ylim=(ymin, ymax), zlim=(zmin, zmax),
-	        xlabel="x (m)", ylabel="y (m)", zlabel="z (m)",
-	        legend=false, title="Spinning Pendulum 3D   Ω = $(Ω) rad/s   t = $(round(ti, digits=2)) s",
-	        camera=(35, 25)
-	    )
-	    plot!(plt, [origin[1], top[1]], [origin[2], top[2]], [origin[3], top[3]], lw=4) 
-	    plot!(plt, [top[1], p[1]],     [top[2], p[2]],     [top[3], p[3]],     lw=4)      
-	    plot!(plt, [p[1], b[1]], [p[2], b[2]], [p[3], b[3]], lw=4)
-	    scatter!(plt, [b[1]], [b[2]], [b[3]], markersize=8)
-	    plot!(plt, xt, yt, zt, lw=2)
-	    plt
-	end
-	gif(anim, "spinning_pendulum_3D.gif", fps=60)
+using DifferentialEquations
+using Plots
+gr()
+g  = 9.81
+L  = 0.15
+h1 = 0.2
+w1 = 0.1
+Ω = 1.0                
+θ0 = 20 * (pi/180)    
+θdot0 = 0.0
+tspan = (0.0, 10.0)
+println("===== Spinning Pendulum Equation of Motion =====")
+println("θ¨ + (g/L) sin(θ) - Ω² sin(θ) cos(θ) = 0")
+println("θ¨ = -(g/L) sin(θ) + Ω² sin(θ) cos(θ)")
+println("State form:")
+println("ẋ₁ = x₂")
+println("ẋ₂ = -(g/L) sin(x₁) + Ω² sin(x₁) cos(x₁)")
+println("================================================")
+function spinning_pendulum!(du, u, p, t)
+    θ, θdot = u
+    g, L, Ω = p
+    du[1] = θdot
+    du[2] = -(g/L)*sin(θ) + Ω^2*sin(θ)*cos(θ)
+end
+u0   = [θ0, θdot0]
+pars = (g, L, Ω)
+prob = ODEProblem(spinning_pendulum!, u0, tspan, pars)
+sol  = solve(prob, Tsit5())
+θ_vals    = getindex.(sol.u, 1)
+θdot_vals = getindex.(sol.u, 2)
+
+p1 = plot(sol.t, θ_vals, xlabel="t (s)", ylabel="θ (rad)",
+          title="Angle vs Time (Ω=$(Ω))", label="θ(t)")
+
+p2 = plot(sol.t, θdot_vals, xlabel="t (s)", ylabel="θ̇ (rad/s)",
+          title="Angular Velocity vs Time", label="θ̇(t)")
+
+display(plot(p1, p2, layout=(2,1)))
+Rz(φ) = begin
+    c = cos(φ); s = sin(φ)
+    [c -s 0.0;
+     s  c 0.0;
+     0.0 0.0 1.0]
+end
+pivot_inertial(t) = Rz(Ω*t) * [0.0, w1, h1]
+bob_inertial(θ, t) = begin
+    q = [L*sin(θ), w1, h1 - L*cos(θ)]
+    Rz(Ω*t) * q
+end
+fps = 60
+ts = range(tspan[1], tspan[2], length=Int((tspan[2]-tspan[1])*fps))
+θs = [sol(t)[1] for t in ts]
+xs = Float64[]; ys = Float64[]; zs = Float64[]
+px = Float64[]; py = Float64[]; pz = Float64[]
+for (t, θ) in zip(ts, θs)
+    r  = bob_inertial(θ, t)
+    rp = pivot_inertial(t)
+    push!(xs, r[1]);  push!(ys, r[2]);  push!(zs, r[3])
+    push!(px, rp[1]); push!(py, rp[2]); push!(pz, rp[3])
+end
+pad = 0.05
+allx = vcat(xs, px, [0.0, 0.0])
+ally = vcat(ys, py, [0.0, 0.0])
+allz = vcat(zs, pz, [0.0, h1])
+xmin, xmax = minimum(allx) - pad, maximum(allx) + pad
+ymin, ymax = minimum(ally) - pad, maximum(ally) + pad
+zmin, zmax = minimum(allz) - pad, maximum(allz) + pad
+anim = Animation()
+for k in eachindex(ts)
+    p = (px[k], py[k], pz[k])   # pivot
+    b = (xs[k], ys[k], zs[k])   # bob
+    plt = plot(
+        xlim=(xmin, xmax),
+        ylim=(ymin, ymax),
+        zlim=(zmin, zmax),
+        xlabel="x",
+        ylabel="y",
+        zlabel="z",
+        legend=false,
+        title="Spinning Pendulum 3D   Ω=$(Ω)   t=$(round(ts[k],digits=2))",
+        camera=(35,25),
+        aspect_ratio=:equal
+    )
+    plot!(plt, [0,0], [0,0], [0,h1], lw=4)
+    plot!(plt, [0,p[1]], [0,p[2]], [h1,p[3]], lw=4)
+    plot!(plt, [p[1],b[1]], [p[2],b[2]], [p[3],b[3]], lw=4)
+    scatter!(plt, [b[1]], [b[2]], [b[3]], markersize=8)
+    frame(anim, plt)
+end
+gif(anim, "spinning_pendulum.gif", fps=fps)
 end
 
 # ╔═╡ f17103ea-06bf-11f1-a2b0-79e68ed152eb
@@ -99,6 +118,9 @@ Your team's goal is to
 - visualize the solution with plots and animations
 
 """
+
+# ╔═╡ 929da266-66b6-43c8-bc6f-f0e8f2086aa9
+
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2850,5 +2872,6 @@ version = "1.13.0+0"
 # ╔═╡ Cell order:
 # ╟─f17103ea-06bf-11f1-a2b0-79e68ed152eb
 # ╠═0d9be664-d7c5-4084-add2-25e5418742d6
+# ╠═929da266-66b6-43c8-bc6f-f0e8f2086aa9
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
