@@ -104,7 +104,7 @@ end
 # ╔═╡ ff008011-41da-48dd-b86f-3fe205899fca
 begin
 	
-	using HypertextLiteral
+using HypertextLiteral
 
 	
 image_url = "https://raw.githubusercontent.com/UConn-Dynamics/project_01-14/main/image.png"
